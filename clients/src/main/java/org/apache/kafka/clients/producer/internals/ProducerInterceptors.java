@@ -83,10 +83,10 @@ public class ProducerInterceptors<K, V> implements Closeable {
      *                 If an error occurred, metadata will only contain valid topic and maybe partition.
      * @param exception The exception thrown during processing of this record. Null if no error occurred.
      */
-    public void onAcknowledgement(RecordMetadata metadata, Exception exception) {
+    public void onAcknowledgement(RecordMetadata metadata, Exception exception, ProducerRecord<K, V> record) {
         for (ProducerInterceptor<K, V> interceptor : this.interceptors) {
             try {
-                interceptor.onAcknowledgement(metadata, exception);
+                interceptor.onAcknowledgement(metadata, exception, record);
             } catch (Exception e) {
                 // do not propagate interceptor exceptions, just log
                 log.warn("Error executing interceptor onAcknowledgement callback", e);
@@ -108,13 +108,13 @@ public class ProducerInterceptors<K, V> implements Closeable {
         for (ProducerInterceptor<K, V> interceptor : this.interceptors) {
             try {
                 if (record == null && interceptTopicPartition == null) {
-                    interceptor.onAcknowledgement(null, exception);
+                    interceptor.onAcknowledgement(null, exception, record);
                 } else {
                     if (interceptTopicPartition == null) {
                         interceptTopicPartition = extractTopicPartition(record);
                     }
                     interceptor.onAcknowledgement(new RecordMetadata(interceptTopicPartition, -1, -1,
-                                    RecordBatch.NO_TIMESTAMP, -1, -1), exception);
+                                    RecordBatch.NO_TIMESTAMP, -1, -1), exception, record);
                 }
             } catch (Exception e) {
                 // do not propagate interceptor exceptions, just log

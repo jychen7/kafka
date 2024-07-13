@@ -1552,10 +1552,12 @@ public class KafkaProducer<K, V> implements Producer<K, V> {
         private final String recordLogString;
         private volatile int partition = RecordMetadata.UNKNOWN_PARTITION;
         private volatile TopicPartition topicPartition;
+        private ProducerRecord<K, V> record;
 
         private AppendCallbacks(Callback userCallback, ProducerInterceptors<K, V> interceptors, ProducerRecord<K, V> record) {
             this.userCallback = userCallback;
             this.interceptors = interceptors;
+            this.record = record;
             // Extract record info as we don't want to keep a reference to the record during
             // whole lifetime of the batch.
             // We don't want to have an NPE here, because the interceptors would not be notified (see .doSend).
@@ -1569,7 +1571,7 @@ public class KafkaProducer<K, V> implements Producer<K, V> {
             if (metadata == null) {
                 metadata = new RecordMetadata(topicPartition(), -1, -1, RecordBatch.NO_TIMESTAMP, -1, -1);
             }
-            this.interceptors.onAcknowledgement(metadata, exception);
+            this.interceptors.onAcknowledgement(metadata, exception, this.record);
             if (this.userCallback != null)
                 this.userCallback.onCompletion(metadata, exception);
         }
