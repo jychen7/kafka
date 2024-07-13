@@ -153,7 +153,7 @@ public final class ProducerBatch {
                                                                    timestamp,
                                                                    key == null ? -1 : key.length,
                                                                    value == null ? -1 : value.length,
-                                                                   Time.SYSTEM);
+                                                                   Time.SYSTEM, headers);
             // we have to keep every future returned to the users in case the batch needs to be
             // split to several new batches and resent.
             thunks.add(new Thunk(callback, future));
@@ -178,7 +178,7 @@ public final class ProducerBatch {
                                                                    timestamp,
                                                                    key == null ? -1 : key.remaining(),
                                                                    value == null ? -1 : value.remaining(),
-                                                                   Time.SYSTEM);
+                                                                   Time.SYSTEM, headers);
             // Chain the future to the original thunk.
             thunk.future.chain(future);
             this.thunks.add(thunk);
