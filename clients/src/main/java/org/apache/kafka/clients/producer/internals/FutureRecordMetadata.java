@@ -39,12 +39,18 @@ public final class FutureRecordMetadata implements Future<RecordMetadata> {
 
     public FutureRecordMetadata(ProduceRequestResult result, int batchIndex, long createTimestamp, int serializedKeySize,
                                 int serializedValueSize, Time time) {
+        this(result, batchIndex, createTimestamp, serializedKeySize, serializedValueSize, time, null);
+    }
+
+    public FutureRecordMetadata(ProduceRequestResult result, int batchIndex, long createTimestamp, int serializedKeySize,
+                                int serializedValueSize, Time time, Header[] headers) {
         this.result = result;
         this.batchIndex = batchIndex;
         this.createTimestamp = createTimestamp;
         this.serializedKeySize = serializedKeySize;
         this.serializedValueSize = serializedValueSize;
         this.time = time;
+        this.headers = headers;
     }
 
     @Override
