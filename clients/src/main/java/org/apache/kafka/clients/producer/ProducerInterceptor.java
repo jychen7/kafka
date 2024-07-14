@@ -87,6 +87,9 @@ public interface ProducerInterceptor<K, V> extends Configurable, AutoCloseable {
      * @param exception The exception thrown during processing of this record. Null if no error occurred.
      */
     void onAcknowledgement(RecordMetadata metadata, Exception exception);
+    default void onAcknowledgement(RecordMetadata metadata, Exception exception, Headers headers) {
+        onAcknowledgement(metadata, exception);
+    }
 
     /**
      * This is called when interceptor is closed
