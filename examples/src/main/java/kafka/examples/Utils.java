@@ -20,9 +20,11 @@ import org.apache.kafka.clients.admin.Admin;
 import org.apache.kafka.clients.admin.AdminClientConfig;
 import org.apache.kafka.clients.admin.NewTopic;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
+import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.clients.producer.RecordMetadata;
 import org.apache.kafka.common.errors.TopicExistsException;
 import org.apache.kafka.common.errors.UnknownTopicOrPartitionException;
+import org.apache.kafka.common.header.Headers;
 
 import java.util.Arrays;
 import java.util.List;
@@ -51,17 +53,21 @@ public class Utils {
     }
 
     public static void maybePrintRecord(long numRecords, ConsumerRecord<Integer, String> record) {
-        maybePrintRecord(numRecords, record.key(), record.value(), record.topic(), record.partition(), record.offset());
+        maybePrintRecord(numRecords, record.key(), record.value(), record.topic(), record.partition(), record.offset(), record.headers());
+    }
+
+    public static void maybePrintRecord(long numRecords, ProducerRecord<Integer, String> record, RecordMetadata metadata) {
+        maybePrintRecord(numRecords, record.key(), record.value(), metadata.topic(), metadata.partition(), metadata.offset(), record.headers());
     }
 
     public static void maybePrintRecord(long numRecords, int key, String value, RecordMetadata metadata) {
-        maybePrintRecord(numRecords, key, value, metadata.topic(), metadata.partition(), metadata.offset());
+        maybePrintRecord(numRecords, key, value, metadata.topic(), metadata.partition(), metadata.offset(), null);
     }
 
-    private static void maybePrintRecord(long numRecords, int key, String value, String topic, int partition, long offset) {
+    private static void maybePrintRecord(long numRecords, int key, String value, String topic, int partition, long offset, Headers headers) {
         // we only print 10 records when there are 20 or more to send
         if (key % Math.max(1, numRecords / 10) == 0) {
-            printOut("Sample: record(%d, %s), partition(%s-%d), offset(%d)", key, value, topic, partition, offset);
+            printOut("Sample: record(%d, %s, %s), partition(%s-%d), offset(%d)", key, value, headers, topic, partition, offset);
         }
     }
 

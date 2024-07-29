@@ -32,6 +32,7 @@ import org.apache.kafka.common.errors.UnsupportedVersionException;
 import org.apache.kafka.common.serialization.IntegerSerializer;
 import org.apache.kafka.common.serialization.StringSerializer;
 
+import java.nio.charset.StandardCharsets;
 import java.util.Properties;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
@@ -113,6 +114,8 @@ public class Producer extends Thread {
         // key and value are just byte arrays, so we need to set appropriate serializers
         props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, IntegerSerializer.class);
         props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
+        props.put(ProducerConfig.INTERCEPTOR_CLASSES_CONFIG, MyProducerInterceptor.class.getName());
+
         if (transactionTimeoutMs > 0) {
             // max time before the transaction coordinator proactively aborts the ongoing transaction
             props.put(ProducerConfig.TRANSACTION_TIMEOUT_CONFIG, transactionTimeoutMs);
@@ -131,15 +134,18 @@ public class Producer extends Thread {
         // send the record asynchronously, setting a callback to be notified of the result
         // note that, even if you set a small batch.size with linger.ms=0, the send operation
         // will still be blocked when buffer.memory is full or metadata are not available
-        producer.send(new ProducerRecord<>(topic, key, value), new ProducerCallback(key, value));
+        ProducerRecord<Integer, String> record = new ProducerRecord<>(topic, key, value);
+        record.headers().add("from_producer", "value".getBytes(StandardCharsets.UTF_8));
+        producer.send(record, new ProducerCallback(record));
     }
 
     private RecordMetadata syncSend(KafkaProducer<Integer, String> producer, int key, String value)
         throws ExecutionException, InterruptedException {
         try {
             // send the record and then call get, which blocks waiting for the ack from the broker
-            RecordMetadata metadata = producer.send(new ProducerRecord<>(topic, key, value)).get();
-            Utils.maybePrintRecord(numRecords, key, value, metadata);
+            ProducerRecord<Integer, String> record = new ProducerRecord<>(topic, key, value);
+            RecordMetadata metadata = producer.send(record).get();
+            Utils.maybePrintRecord(numRecords, record, metadata);
             return metadata;
         } catch (AuthorizationException | UnsupportedVersionException | ProducerFencedException
                  | FencedInstanceIdException | OutOfOrderSequenceException | SerializationException e) {
@@ -153,12 +159,10 @@ public class Producer extends Thread {
     }
 
     class ProducerCallback implements Callback {
-        private final int key;
-        private final String value;
+        private final ProducerRecord<Integer, String> record;
 
-        public ProducerCallback(int key, String value) {
-            this.key = key;
-            this.value = value;
+        public ProducerCallback(ProducerRecord<Integer, String> record) {
+            this.record = record;
         }
 
         /**
@@ -178,7 +182,7 @@ public class Producer extends Thread {
                     shutdown();
                 }
             } else {
-                Utils.maybePrintRecord(numRecords, key, value, metadata);
+                Utils.maybePrintRecord(numRecords, record, metadata);
             }
         }
     }
